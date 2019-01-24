@@ -5,6 +5,9 @@ SYSTEM_MODE(AUTOMATIC);
 // IMPORTANT: Set pixel COUNT, PIN and TYPE
 #define PIXEL_PIN D4
 #define PIXEL_COUNT 24
+#define MAX_BRIGHTNESS 40
+#define MIN_BRIGHTNESS 5
+#define BREATH_STEP_MILLISECONDS 50
 #define PIXEL_TYPE SK6812RGBW
 
 Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
@@ -14,6 +17,10 @@ void rainbow(uint8_t wait);
 uint32_t Wheel(byte WheelPos);
 bool lightsOn = false;
 uint32_t timeOff = 0;
+
+uint16_t currentWhiteBrightness = MAX_BRIGHTNESS;
+int breathDirection = -1;
+uint32_t timeToChangeBrightness = 0;
 
 int turnOn(String args) {
   lightsOn = true;
@@ -31,9 +38,20 @@ void setup()
 
 void loop()
 {
-  if (millis() >= timeOff) {
+  if (millis() >= timeOff) {  // Should we be off, ie breathing white
     for (int i = 0; i < PIXEL_COUNT; i++) {
-      strip.setPixelColor(i, 0);
+      if (millis() >= timeToChangeBrightness) {
+        if (currentWhiteBrightness >= MAX_BRIGHTNESS) {
+          breathDirection = -1;
+        }
+        if (currentWhiteBrightness <= MIN_BRIGHTNESS) {
+          breathDirection = 1;
+        }
+        currentWhiteBrightness = currentWhiteBrightness + breathDirection;
+        timeToChangeBrightness = millis() + BREATH_STEP_MILLISECONDS;
+      }
+      strip.setBrightness(currentWhiteBrightness);
+      strip.setPixelColor(i, 0, 0, 0, 255);
     }
     strip.begin();
     strip.show();
@@ -41,6 +59,7 @@ void loop()
   }
 
    if (lightsOn) {
+     strip.setBrightness(255);
      rainbow(10);
    }
 }
